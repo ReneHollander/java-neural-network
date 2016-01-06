@@ -1,15 +1,6 @@
 package at.renehollander.javaneuralnetwork;
 
-import com.mxgraph.layout.hierarchical.mxHierarchicalLayout;
-import com.mxgraph.layout.mxGraphLayout;
-import com.mxgraph.swing.mxGraphComponent;
-import com.mxgraph.util.mxConstants;
-import org.jgrapht.ext.JGraphXAdapter;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
-
-import javax.swing.*;
-
+//
 //public class Visualization {
 //
 //    private NeuralNetwork neuralNetwork;

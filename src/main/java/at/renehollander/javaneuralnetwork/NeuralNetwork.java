@@ -1,106 +1,123 @@
 package at.renehollander.javaneuralnetwork;
 
 import java.util.Arrays;
-import java.util.Random;
 
 public class NeuralNetwork {
 
-    private final ActivationFunction activationFunction;
-    private final NormalizationFunction normalizationFunction;
-
+    private static double recentAverageSmoothingFactor = 100.0;
 
     private Layer[] layers;
+    private double error;
+    private double recentAverageError;
 
-    public NeuralNetwork(ActivationFunction activationFunction, NormalizationFunction normalizationFunction, int... neurons) {
-        this.activationFunction = activationFunction;
-        this.normalizationFunction = normalizationFunction;
+    public NeuralNetwork(int... topology) {
 
-        layers = new Layer[neurons.length];
-        for (int i = 0; i < layers.length; i++) {
-            layers[i] = new Layer(neurons[i]);
+        error = 0;
+        recentAverageError = 0;
+
+        layers = new Layer[topology.length];
+        for (int layerNum = 0; layerNum < topology.length; ++layerNum) {
+            Layer layer = new Layer();
+            layers[layerNum] = layer;
+            int numOutputs = layerNum == topology.length - 1 ? 0 : topology[layerNum + 1];
+
+            // We have a new layer, now fill it with neurons, and
+            // add a bias neuron in each layer.
+            layer.neurons = new Neuron[topology[layerNum]];
+            for (int neuronNum = 0; neuronNum < topology[layerNum]; ++neuronNum) {
+                layer.neurons[neuronNum] = new Neuron(numOutputs, neuronNum);
+            }
+
+            // Force the bias node's output to 1.0 (it was the last neuron pushed in this layer):
+            layer.neurons[layer.neurons.length - 1].setOutputValue(1);
+        }
+    }
+
+    public void feedForward(double[] inputVals) {
+        Layer first = layers[0];
+        if (inputVals.length != first.neurons.length)
+            throw new IllegalArgumentException("Wrong amount of inputVals. Expected " + first.neurons.length);
+
+        // Assign (latch) the input values into the input neurons
+        for (int i = 0; i < inputVals.length; ++i) {
+            first.neurons[i].setOutputValue(inputVals[i]);
         }
 
-        for (int i = 1; i < layers.length; ++i) {
-            Layer prev = layers[i - 1];
-            Layer curr = layers[i];
-            for (int j = 0; j < curr.neurons.length; ++j) {
-                Neuron n = curr.neurons[j];
-                n.gewicht = randomDoubleArray(prev.neurons.length, 0, 1);
+        // forward propagate
+        for (int layerNum = 1; layerNum < layers.length; ++layerNum) {
+            Layer prev = layers[layerNum - 1];
+            Layer curr = layers[layerNum];
+            for (int n = 0; n < curr.neurons.length; ++n) {
+                curr.neurons[n].feedForward(prev);
             }
         }
     }
 
-    public double[] compute(double[] input) {
-        Layer layer0 = layers[0];
-        for (int i = 0; i < layer0.neurons.length; i++) {
-            layer0.neurons[i].value = this.normalizationFunction.normalize(input[i]);
+    public void backProp(double[] targetVals) {
+// Calculate overall net error (RMS of output neuron errors)
+
+        Layer outputLayer = layers[layers.length - 1];
+        error = 0.0;
+
+        for (int n = 0; n < outputLayer.neurons.length; ++n) {
+            double delta = targetVals[n] - outputLayer.neurons[n].getOutputValue();
+            error += delta * delta;
+        }
+        error /= outputLayer.neurons.length; // get average error squared
+        error = Math.sqrt(error); // RMS
+
+        // Implement a recent average measurement
+
+        recentAverageError = (recentAverageError * recentAverageSmoothingFactor + error) / (recentAverageSmoothingFactor + 1.0);
+
+        // Calculate output layer gradients
+
+        for (int n = 0; n < outputLayer.neurons.length; ++n) {
+            outputLayer.neurons[n].calcOutputGradients(targetVals[n]);
         }
 
-        for (int i = 1; i < layers.length; i++) {
-            Layer prev = layers[i - 1];
-            Layer curr = layers[i];
-            for (Neuron n1 : curr.neurons) {
-                double val = n1.bias;
-                for (int j = 0; j < prev.neurons.length; j++) {
-                    Neuron n2 = prev.neurons[j];
-                    val += n2.value * n1.gewicht[j];
-                }
-                n1.value = activationFunction.apply(val);
+        // Calculate hidden layer gradients
+        for (int layerNum = layers.length - 2; layerNum > 0; --layerNum) {
+            Layer hiddenLayer = layers[layerNum];
+            Layer nextLayer = layers[layerNum + 1];
+
+            for (int n = 0; n < hiddenLayer.neurons.length; ++n) {
+                hiddenLayer.neurons[n].calcHiddenGradients(nextLayer);
             }
         }
-        return Arrays.copyOf(layers[layers.length - 1].getValues(), layers[layers.length - 1].getValues().length);
+
+        // For all layers from outputs to first hidden layer,
+        // update connection weights
+
+        for (int layerNum = layers.length - 1; layerNum > 0; --layerNum) {
+            Layer layer = layers[layerNum];
+            Layer prevLayer = layers[layerNum - 1];
+
+            for (int n = 0; n < layer.neurons.length; ++n) {
+                layer.neurons[n].updateInputWeights(prevLayer);
+            }
+        }
     }
 
-    public double[] learn(double learn_rate, double[] input, double[] results) {
-        double[] computeres = this.normalizationFunction.denormalize(compute(input));
-
-        for (int i = layers.length - 1; i >= 1; --i) {
-            Layer prev = layers[i - 1];
-            Layer curr = layers[i];
-            if (i == layers.length - 1) {
-                for (int j = 0; j < curr.neurons.length; ++j) {
-                    Neuron n = curr.neurons[j];
-                    n.error = n.value * (1 - n.value) * this.normalizationFunction.normalize(results[j]) - n.value;
-                }
-            } else {
-                Layer next = layers[i + 1];
-                for (int j = 0; j < curr.neurons.length; ++j) {
-                    Neuron n = curr.neurons[j];
-                    n.error = 0;
-                    for (int k = 0; k < next.neurons.length; ++k) {
-                        Neuron n2 = next.neurons[k];
-                        n.error += n2.error * n2.gewicht[j];
-                    }
-                    n.error *= n.value * (1 - n.value);
-                }
-            }
-            for (int j = 0; j < curr.neurons.length; ++j) {
-                Neuron n = curr.neurons[j];
-                n.bias += learn_rate * n.error;
-                for (int k = 0; k < prev.neurons.length; ++k) {
-                    Neuron n2 = prev.neurons[k];
-                    n.gewicht[k] += learn_rate * n2.value * n.error;
-                }
-            }
-        }
-
-        return computeres;
-    }
-
-    private static final Random RANDOM = new Random();
-
-    private static double[] randomDoubleArray(int count, double min, double max) {
-        double[] ret = new double[count];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = min + (max - min) * RANDOM.nextDouble();
+    public double[] getResults() {
+        Layer last = layers[layers.length - 1];
+        double[] ret = new double[last.neurons.length];
+        for (int n = 0; n < last.neurons.length; ++n) {
+            ret[n] = last.neurons[n].getOutputValue();
         }
         return ret;
+    }
+
+    public double getRecentAverageError() {
+        return recentAverageError;
     }
 
     @Override
     public String toString() {
         return "NeuralNetwork{" +
                 "layers=" + Arrays.toString(layers) +
+                ", error=" + error +
+                ", recentAverageError=" + recentAverageError +
                 '}';
     }
 }

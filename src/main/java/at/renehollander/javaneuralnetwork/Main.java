@@ -1,21 +1,42 @@
 package at.renehollander.javaneuralnetwork;
 
-import java.text.DecimalFormat;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
 
 public class Main {
 
-    private static final double LEARN_RATE = 0.009;
+    public static void main(String[] args) throws IOException {
 
-    public static void main(String[] args) {
-        NeuralNetwork neuralNetwork = new NeuralNetwork(new ActivationFunction.OneToThePowerOfTwo(), new NormalizationFunction.NormalizationFunction1(0.0, 1.0, 0.0, 1.0), 2, 2, 1);
-        DecimalFormat df = new DecimalFormat("##.#####");
+        TrainingData trainData = new TrainingData(new File("./trainingData.txt"));
+
+        NeuralNetwork net = new NeuralNetwork(trainData.getTopology());
+
+        int trainingPass = 0;
+
         while (true) {
-            System.out.println("0^0=" + df.format(neuralNetwork.learn(LEARN_RATE, new double[]{0, 0}, new double[]{0})[0]));
-            System.out.println("1^0=" + df.format(neuralNetwork.learn(LEARN_RATE, new double[]{1, 0}, new double[]{1})[0]));
-            System.out.println("0^1=" + df.format(neuralNetwork.learn(LEARN_RATE, new double[]{0, 1}, new double[]{1})[0]));
-            System.out.println("1^1=" + df.format(neuralNetwork.learn(LEARN_RATE, new double[]{1, 1}, new double[]{0})[0]));
-            System.out.println(neuralNetwork);
+            ++trainingPass;
+            double[] inputValues = trainData.getNextInputValues();
+            double[] outputValues = trainData.getNextOutputValues();
+            if (inputValues == null || outputValues == null) break;
+
+            System.out.println("Pass " + trainingPass);
+            System.out.println("Inputs: " + Arrays.toString(inputValues));
+
+            net.feedForward(inputValues);
+            double[] results = net.getResults();
+            net.backProp(outputValues);
+
+            System.out.println("Results: " + Arrays.toString(results));
+            System.out.println("Expected Results: " + Arrays.toString(outputValues));
+
+            System.out.println("Recent average error: " + net.getRecentAverageError());
+            System.out.println();
+
         }
+
+        System.out.println("Done");
+
     }
 
 }
