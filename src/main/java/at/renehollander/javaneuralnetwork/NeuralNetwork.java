@@ -99,6 +99,10 @@ public class NeuralNetwork {
         }
     }
 
+    public Layer[] getLayers() {
+        return layers;
+    }
+
     public double[] getResults() {
         Layer last = layers[layers.length - 1];
         double[] ret = new double[last.neurons.length];
