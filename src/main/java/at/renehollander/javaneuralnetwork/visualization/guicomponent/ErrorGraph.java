@@ -12,11 +12,14 @@ import java.awt.*;
 public class ErrorGraph implements GUIComponent {
 
     private XYSeries errorSeries;
+    private XYSeries recentAverageErrorSeries;
     private JFreeChart chart;
 
     public ErrorGraph() {
         XYSeriesCollection dataset = new XYSeriesCollection();
         errorSeries = new XYSeries("Error");
+        recentAverageErrorSeries = new XYSeries("Recent Average Error");
+        dataset.addSeries(recentAverageErrorSeries);
         dataset.addSeries(errorSeries);
 
         chart = ChartFactory.createXYLineChart(
@@ -33,12 +36,11 @@ public class ErrorGraph implements GUIComponent {
         chart.setBackgroundPaint(Color.white);
     }
 
-    public XYSeries getSeries() {
-        return this.errorSeries;
+    public void addErrorSample(int pass, double error) {
+        errorSeries.add(pass, error);
     }
-
-    public void addSample(int pass, double error) {
-        getSeries().add(pass, error);
+    public void addRecentAverageErrorSample(int pass, double error) {
+        recentAverageErrorSeries.add(pass, error);
     }
 
     @Override

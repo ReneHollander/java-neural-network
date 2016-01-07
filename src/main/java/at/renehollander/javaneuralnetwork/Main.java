@@ -33,34 +33,38 @@ public class Main {
 
         int trainingPass = 0;
 
-        while (true) {
-            ++trainingPass;
-            double[] inputValues = trainData.getNextInputValues();
-            double[] outputValues = trainData.getNextOutputValues();
-            if (inputValues == null || outputValues == null) break;
+        for (int i = 0; i < 2; i++) {
+            trainData = new TrainingData(new File("./trainingData.txt"));
+            while (true) {
+                ++trainingPass;
+                double[] inputValues = trainData.getNextInputValues();
+                double[] outputValues = trainData.getNextOutputValues();
+                if (inputValues == null || outputValues == null) break;
 
-            inputValueGraph.addSample(trainingPass, inputValues);
+                inputValueGraph.addSample(trainingPass, inputValues);
 
-            System.out.println("Pass " + trainingPass);
-            System.out.println("Inputs: " + Arrays.toString(inputValues));
+                System.out.println("Pass " + trainingPass);
+                System.out.println("Inputs: " + Arrays.toString(inputValues));
 
-            net.feedForward(inputValues);
-            double[] results = net.getResults();
-            outputValueGraph.addSample(trainingPass, results, outputValues);
-            net.backProp(outputValues);
+                net.feedForward(inputValues);
+                double[] results = net.getResults();
+                outputValueGraph.addSample(trainingPass, results, outputValues);
+                net.backProp(outputValues);
 
-            System.out.println("Results: " + Arrays.toString(results));
-            System.out.println("Expected Results: " + Arrays.toString(outputValues));
+                System.out.println("Results: " + Arrays.toString(results));
+                System.out.println("Expected Results: " + Arrays.toString(outputValues));
 
-            errorGraph.addSample(trainingPass, net.getRecentAverageError());
+                errorGraph.addErrorSample(trainingPass, net.getError());
+                errorGraph.addRecentAverageErrorSample(trainingPass, net.getRecentAverageError());
 
-            System.out.println("Recent average error: " + net.getRecentAverageError());
-            System.out.println();
+                System.out.println("Recent average error: " + net.getRecentAverageError());
+                System.out.println();
 
-            neuralNetworkGraph.update();
+                neuralNetworkGraph.update();
 
-            if (speedControl.getSpeed() != 0) {
-                Thread.sleep(speedControl.getSpeed());
+                if (speedControl.getSpeed() != 0) {
+                    Thread.sleep(speedControl.getSpeed());
+                }
             }
         }
 

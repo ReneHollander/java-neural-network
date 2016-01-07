@@ -54,8 +54,7 @@ public class NeuralNetwork {
     }
 
     public void backProp(double[] targetVals) {
-// Calculate overall net error (RMS of output neuron errors)
-
+        // Calculate overall net error (RMS of output neuron errors)
         Layer outputLayer = layers[layers.length - 1];
         error = 0.0;
 
@@ -67,11 +66,9 @@ public class NeuralNetwork {
         error = Math.sqrt(error); // RMS
 
         // Implement a recent average measurement
-
         recentAverageError = (recentAverageError * recentAverageSmoothingFactor + error) / (recentAverageSmoothingFactor + 1.0);
 
         // Calculate output layer gradients
-
         for (int n = 0; n < outputLayer.neurons.length; ++n) {
             outputLayer.neurons[n].calcOutputGradients(targetVals[n]);
         }
@@ -88,7 +85,6 @@ public class NeuralNetwork {
 
         // For all layers from outputs to first hidden layer,
         // update connection weights
-
         for (int layerNum = layers.length - 1; layerNum > 0; --layerNum) {
             Layer layer = layers[layerNum];
             Layer prevLayer = layers[layerNum - 1];
@@ -123,5 +119,9 @@ public class NeuralNetwork {
                 ", error=" + error +
                 ", recentAverageError=" + recentAverageError +
                 '}';
+    }
+
+    public double getError() {
+        return error;
     }
 }
