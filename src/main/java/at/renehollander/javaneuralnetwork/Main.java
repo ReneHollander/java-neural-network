@@ -1,75 +1,95 @@
 package at.renehollander.javaneuralnetwork;
 
+import at.renehollander.javaneuralnetwork.data.Data;
+import at.renehollander.javaneuralnetwork.data.XORDataProvider;
 import at.renehollander.javaneuralnetwork.visualization.SpeedControl;
 import at.renehollander.javaneuralnetwork.visualization.Visualization;
 import at.renehollander.javaneuralnetwork.visualization.guicomponent.ErrorGraph;
 import at.renehollander.javaneuralnetwork.visualization.guicomponent.InputValueGraph;
-import at.renehollander.javaneuralnetwork.visualization.guicomponent.NeuralNetworkGraph;
+import at.renehollander.javaneuralnetwork.visualization.guicomponent.NetInformationPanel;
 import at.renehollander.javaneuralnetwork.visualization.guicomponent.OutputValueGraph;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        TrainingData trainData = new TrainingData(new File("./trainingData.txt"));
-        NeuralNetwork net = new NeuralNetwork(trainData.getTopology());
+    public static void startWithGUI() throws InterruptedException {
+        int[] topology = new int[]{2, 4, 1};
+        XORDataProvider xorDataProvider = new XORDataProvider();
+        NeuralNetwork net = new NeuralNetwork(topology);
 
         Visualization visualization = new Visualization();
 
         ErrorGraph errorGraph = new ErrorGraph();
         InputValueGraph inputValueGraph = new InputValueGraph(10, net.getLayers()[0].neurons.length);
         OutputValueGraph outputValueGraph = new OutputValueGraph(10, net.getLayers()[net.getLayers().length - 1].neurons.length);
-        NeuralNetworkGraph neuralNetworkGraph = new NeuralNetworkGraph(net);
+        NetInformationPanel netInformationPanel = new NetInformationPanel(net);
         visualization.getMainPanel().add(inputValueGraph.getComponent());
         visualization.getMainPanel().add(errorGraph.getComponent());
         visualization.getMainPanel().add(outputValueGraph.getComponent());
-        visualization.getMainPanel().add(neuralNetworkGraph.getComponent());
+        visualization.getMainPanel().add(netInformationPanel.getComponent());
         SpeedControl speedControl = new SpeedControl();
         visualization.getTopBarPanel().add(speedControl.getComponent());
         visualization.visualize();
 
         int trainingPass = 0;
 
-        for (int i = 0; i < 2; i++) {
-            trainData = new TrainingData(new File("./trainingData.txt"));
-            while (true) {
-                ++trainingPass;
-                double[] inputValues = trainData.getNextInputValues();
-                double[] outputValues = trainData.getNextOutputValues();
-                if (inputValues == null || outputValues == null) break;
+        for (Data d : xorDataProvider) {
+            ++trainingPass;
 
-                inputValueGraph.addSample(trainingPass, inputValues);
+            long start = System.nanoTime();
+            double[] results = net.process(d);
+            long stop = System.nanoTime();
 
-                System.out.println("Pass " + trainingPass);
-                System.out.println("Inputs: " + Arrays.toString(inputValues));
+            inputValueGraph.addSample(trainingPass, d.getInput());
+            outputValueGraph.addSample(trainingPass, results, d.getResult());
+            errorGraph.addErrorSample(trainingPass, net.getError());
+            errorGraph.addRecentAverageErrorSample(trainingPass, net.getRecentAverageError());
+            netInformationPanel.update(trainingPass);
 
-                net.feedForward(inputValues);
-                double[] results = net.getResults();
-                outputValueGraph.addSample(trainingPass, results, outputValues);
-                net.backProp(outputValues);
+//            System.out.println("Pass " + trainingPass);
+//            System.out.println("Inputs: " + Arrays.toString(d.getInput()));
+//            System.out.println("Results: " + Arrays.toString(results));
+//            System.out.println("Expected Results: " + Arrays.toString(d.getResult()));
+//            System.out.println("Recent average error: " + net.getRecentAverageError());
+//            System.out.println("Time to process: " + (stop - start) + "ns");
+//            System.out.println();
 
-                System.out.println("Results: " + Arrays.toString(results));
-                System.out.println("Expected Results: " + Arrays.toString(outputValues));
-
-                errorGraph.addErrorSample(trainingPass, net.getError());
-                errorGraph.addRecentAverageErrorSample(trainingPass, net.getRecentAverageError());
-
-                System.out.println("Recent average error: " + net.getRecentAverageError());
-                System.out.println();
-
-                neuralNetworkGraph.update();
-
-                if (speedControl.getSpeed() != 0) {
-                    Thread.sleep(speedControl.getSpeed());
-                }
+            if (speedControl.getSpeed() != 0) {
+                Thread.sleep(speedControl.getSpeed());
             }
         }
+    }
 
-        System.out.println("Done");
+    public static void startWithoutGUI() throws InterruptedException {
+        int[] topology = new int[]{2, 4, 1};
+        XORDataProvider xorDataProvider = new XORDataProvider();
+        NeuralNetwork net = new NeuralNetwork(topology);
 
+        int trainingPass = 0;
+
+        for (Data d : xorDataProvider) {
+            ++trainingPass;
+
+            long start = System.nanoTime();
+            double[] results = net.process(d);
+            long stop = System.nanoTime();
+
+//            System.out.println("Pass " + trainingPass);
+//            System.out.println("Inputs: " + Arrays.toString(d.getInput()));
+//            System.out.println("Results: " + Arrays.toString(results));
+//            System.out.println("Expected Results: " + Arrays.toString(d.getResult()));
+//            System.out.println("Recent average error: " + net.getRecentAverageError());
+//            System.out.println("Time to process: " + (stop - start) + "ns");
+//            System.out.println();
+
+        }
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+//        startWithGUI();
+        startWithoutGUI();
     }
 
 }

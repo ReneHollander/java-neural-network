@@ -1,6 +1,9 @@
 package at.renehollander.javaneuralnetwork;
 
+import at.renehollander.javaneuralnetwork.data.Data;
+
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 public class NeuralNetwork {
 
@@ -31,6 +34,15 @@ public class NeuralNetwork {
             // Force the bias node's output to 1.0 (it was the last neuron pushed in this layer):
             layer.neurons[layer.neurons.length - 1].setOutputValue(1);
         }
+    }
+
+    public double[] process(Data data) {
+        feedForward(data.getInput());
+        double[] res = getResults();
+        if (data.hasTrainingData()) {
+            backProp(data.getResult());
+        }
+        return res;
     }
 
     public void feedForward(double[] inputVals) {
