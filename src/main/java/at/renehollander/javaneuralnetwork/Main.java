@@ -2,6 +2,7 @@ package at.renehollander.javaneuralnetwork;
 
 import at.renehollander.javaneuralnetwork.data.Data;
 import at.renehollander.javaneuralnetwork.data.XORDataProvider;
+import at.renehollander.javaneuralnetwork.util.OnlineNormalEstimator;
 import at.renehollander.javaneuralnetwork.visualization.SpeedControl;
 import at.renehollander.javaneuralnetwork.visualization.Visualization;
 import at.renehollander.javaneuralnetwork.visualization.guicomponent.ErrorGraph;
@@ -10,7 +11,6 @@ import at.renehollander.javaneuralnetwork.visualization.guicomponent.NetInformat
 import at.renehollander.javaneuralnetwork.visualization.guicomponent.OutputValueGraph;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class Main {
 
@@ -69,6 +69,8 @@ public class Main {
 
         int trainingPass = 0;
 
+        OnlineNormalEstimator onlineNormalEstimator = new OnlineNormalEstimator();
+
         for (Data d : xorDataProvider) {
             ++trainingPass;
 
@@ -81,15 +83,28 @@ public class Main {
 //            System.out.println("Results: " + Arrays.toString(results));
 //            System.out.println("Expected Results: " + Arrays.toString(d.getResult()));
 //            System.out.println("Recent average error: " + net.getRecentAverageError());
-//            System.out.println("Time to process: " + (stop - start) + "ns");
+            if (trainingPass > 1000000) {
+                onlineNormalEstimator.handle(stop - start);
+
+                if (onlineNormalEstimator.numSamples() % 1000000 == 0) {
+                    System.out.println("Time Report:");
+                    System.out.println("Passes:\t" + onlineNormalEstimator.numSamples());
+                    System.out.println("Mean:\t" + onlineNormalEstimator.mean() + "ns");
+                    System.out.println("Std:\t" + onlineNormalEstimator.standardDeviation() + "ns");
+                    System.out.println("Var:\t" + onlineNormalEstimator.variance() + "ns");
+                    System.out.println();
+                    System.out.flush();
+                }
+            }
+
 //            System.out.println();
 
         }
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-//        startWithGUI();
-        startWithoutGUI();
+        startWithGUI();
+//        startWithoutGUI();
     }
 
 }

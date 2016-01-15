@@ -32,6 +32,7 @@ public class Visualization extends ApplicationFrame {
         topBarPanel = new JPanel(new GridLayout(0, 3));
         topBarPanel.setPreferredSize(new Dimension(0, 50));
         topBarPanel.setMinimumSize(new Dimension(0, 50));
+        topBarPanel.setMaximumSize(new Dimension(0, 50));
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.add(mainPanel, BorderLayout.SOUTH);
         contentPanel.add(topBarPanel, BorderLayout.CENTER);

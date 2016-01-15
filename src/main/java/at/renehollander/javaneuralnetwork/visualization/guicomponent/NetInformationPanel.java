@@ -31,7 +31,7 @@ public class NetInformationPanel implements GUIComponent {
 
     @Override
     public Component getComponent() {
-        return new JScrollPane(panel);
+        return panel;
     }
 
     public void update(int trainingPass) {
