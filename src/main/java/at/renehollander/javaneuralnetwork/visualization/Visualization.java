@@ -1,6 +1,7 @@
 package at.renehollander.javaneuralnetwork.visualization;
 
 
+import at.renehollander.javaneuralnetwork.visualization.guicomponent.GUIComponent;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
@@ -19,6 +20,8 @@ import org.jfree.ui.RefineryUtilities;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 public class Visualization extends ApplicationFrame {
 
@@ -37,6 +40,7 @@ public class Visualization extends ApplicationFrame {
         contentPanel.add(mainPanel, BorderLayout.SOUTH);
         contentPanel.add(topBarPanel, BorderLayout.CENTER);
         setContentPane(contentPanel);
+        this.setFocusable(true);
     }
 
     public JPanel getMainPanel() {
@@ -45,6 +49,17 @@ public class Visualization extends ApplicationFrame {
 
     public JPanel getTopBarPanel() {
         return topBarPanel;
+    }
+
+
+    public void addTop(GUIComponent guiComponent) {
+        getTopBarPanel().add(guiComponent.getComponent());
+        guiComponent.initialize(this);
+    }
+
+    public void addMain(GUIComponent guiComponent) {
+        getMainPanel().add(guiComponent.getComponent());
+        guiComponent.initialize(this);
     }
 
     public void visualize() {

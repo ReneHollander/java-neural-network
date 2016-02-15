@@ -25,17 +25,19 @@ public class Main {
         InputValueGraph inputValueGraph = new InputValueGraph(10, net.getLayers()[0].neurons.length);
         OutputValueGraph outputValueGraph = new OutputValueGraph(10, net.getLayers()[net.getLayers().length - 1].neurons.length);
         NetInformationPanel netInformationPanel = new NetInformationPanel(net);
-        visualization.getMainPanel().add(inputValueGraph.getComponent());
-        visualization.getMainPanel().add(errorGraph.getComponent());
-        visualization.getMainPanel().add(outputValueGraph.getComponent());
-        visualization.getMainPanel().add(netInformationPanel.getComponent());
+        visualization.addMain(inputValueGraph);
+        visualization.addMain(errorGraph);
+        visualization.addMain(outputValueGraph);
+        visualization.addMain(netInformationPanel);
         SpeedControl speedControl = new SpeedControl();
-        visualization.getTopBarPanel().add(speedControl.getComponent());
+        visualization.addTop(speedControl);
         visualization.visualize();
 
         int trainingPass = 0;
 
         for (Data d : xorDataProvider) {
+            if (speedControl.isPaused()) continue;
+
             ++trainingPass;
 
             long start = System.nanoTime();
